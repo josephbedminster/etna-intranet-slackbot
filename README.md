@@ -1,5 +1,9 @@
 # Intranet ETNA : Slackbot
 Pour recevoir ses actualités (messages du mur) sur Slack.
+![prep etna alternance](http://www.etna.io/images/etna-prep.jpg "Logo ETNA alternance prep")
+   
+### Exemple de message
+![prep etna alternance](https://img4.hostingpics.net/pics/791117Capturedcran20170523112838.png "Logo ETNA alternance prep")
 ## Installation
 #### Créez votre bot slack
 > https://my.slack.com/services/new/bot
