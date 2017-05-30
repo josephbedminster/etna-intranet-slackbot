@@ -3,7 +3,12 @@ Pour recevoir ses actualités (messages du mur) sur Slack.
 ![prep etna alternance](http://www.etna.io/images/etna-prep.jpg "Logo ETNA alternance prep")
    
 ### Exemple de message
+`v1`
 ![prep etna alternance](https://img4.hostingpics.net/pics/791117Capturedcran20170523112838.png "Logo ETNA alternance prep")
+   
+`v2`
+![prep etna alternance](https://img4.hostingpics.net/pics/928416Capturedcran20170530193131.png "Logo ETNA alternance prep")
+
 ## Installation
 #### Créez votre bot slack
 > https://my.slack.com/services/new/bot
@@ -22,3 +27,10 @@ var SLACKBOT_TOKEN = "xoxb-xxxx"; //https://my.slack.com/services/new/bot
 ```js
 nodejs server.js
 ```
+
+# Patchnote
+#### v2
+- Passage de `slackbots` à `smarslack`
+- Prise en charge des réponses aux messages
+- `Attachments` slack plutot que `textmessage` pour une mise en forme plus user-friendly
+- Stockage des posts/réponses rencontrées dans save.json.

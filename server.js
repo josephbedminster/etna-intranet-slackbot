@@ -2,7 +2,7 @@
 var LOGIN = "";
 var PASSWORD = "";
 var CHANNEL = "";
-var SLACKBOT_TOKEN = "xoxb-xxxx"; //https://my.slack.com/services/new/bot
+var SLACKBOT_TOKEN = "";
 
 /* MODULES */
 const
@@ -14,38 +14,38 @@ const
 	express = require('express'),
 	request = require('request'),
 	Cookie = require('request-cookies').Cookie,
-	fs = require('fs');
-	var app = express();
+	sleep = require('sleep'),
+	fs = require('fs'),
+	app = express();
 
 /* SLACK */
-var SlackBot = require('slackbots');
-var slackbot = new SlackBot({
-  	token: SLACKBOT_TOKEN, // Add a bot https://my.slack.com/services/new/bot and put the token  
-  	name: 'etna'
-  });
-var params = {
-	icon_url: 'https://img4.hostingpics.net/pics/921067logoetna.jpg'
-};
+var SmartSlack = require('smartslack');
+var options = {};
+options.token = SLACKBOT_TOKEN;
+options.as_user = false;
+options.username = 'etna';
+options.icon_url = 'https://img4.hostingpics.net/pics/921067logoetna.jpg';
+options.attachments = [];
+var slackClient = new SmartSlack(options);
 
-/*INIT LAST ID VU*/
-var lastID;
-getLastIdStored();
+/* INIT GLOBALE COOKIE */
+var apiCookie;
 
 /*INIT SERVER*/
+app.timeout = 0;
 app.listen(process.env.PORT || 3000, process.env.IP || "0.0.0.0", function() {
+	slackClient.start();
 	loopRequest();
-	slackbot.on('message', function(data) {
-		console.log(data);
-		if (data.type == 'desktop_notification') {
-			slackbot.postMessageToUser(data.subtitle, "Je ne suis pas interessée, mais on peut être amis si tu veux ?", params); 
-		}
-	});
-});
+	
+	app.on('error', function(err) { console.log("AAAAAAH : ", err) });
+
+}).on('error', function(err) { console.log("BEEEEEEEH : ", err) });
+
 
 function loopRequest() {
 	var interval = setInterval(function() {
-		apiReload()
-	}, 60000);
+		apiReload();
+	}, 10000);
 }
 
 function apiReload() {
@@ -58,53 +58,125 @@ function apiReload() {
 	'content-type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW' },
 	formData: { login: LOGIN, password: PASSWORD } };
 	request(options, function (error, response, body) {
-		if (error) throw new Error(error);
+		if (error) return;
 		var rawcookies = response.headers['set-cookie'];
 		for (var i in rawcookies) {
 			var cookie = new Cookie(rawcookies[i]);
 			var apiKey = cookie.key;
-			var apiCookie = cookie.key + "=" + cookie.value;
+			apiCookie = cookie.key + "=" + cookie.value;
 		}
 		
 		/* Get wall promotion */
 		request({url: "https://prepintra-api.etna-alternance.net/users/7934/conversations?from=0&size=1", headers: {Cookie: apiCookie}}, function(error, response, body) {
+			if (error)
+				console.log("INTRA LOADING ERROR : ", error);
 			var result = JSON.parse(body);
-			console.log('nouvel id : '+ result.hits[0].id + ' ancien id : ' + lastID);
-		if (lastID != result.hits[0].id) { //Si c'est un nouvel ID
-			lastID = result.hits[0].id; //On stocke le dernier ID vu
-			storeId(lastID); //On l'envoie dans le JSON
-			console.log(result.hits[0].metas['activity-type']);
-			if (result.hits[0].metas['activity-type'] != "quest") { //Si c'est un quest, ne pas afficher
-				var title = result.hits[0].title;
-			var message =  result.hits[0].messages[0].content;
-			var id_poster = result.hits[0].messages[0].user;
-			/* Get user : */
-			request({url: "https://auth.etna-alternance.net/api/users/"+id_poster, headers: {Cookie: apiCookie}}, function(error, response, body) {
-				var result = JSON.parse(body);
-				var login = result.login;
-				var name = result.firstname + " " + result.lastname;
-				slackbot.postMessageToChannel(CHANNEL, '*' + name + ' (' + login + '*)\n' + title + '\n' + message, params);
-			});
-		}
-	}
-});
+			if (result.hits[0].metas['activity-type'] == "quest") { return; }
+			var data = new Array();
+			data['taille'] = result.hits[0].messages.length;
+			data['idMessage'] = result.hits[0].id;
+			data['title'] = result.hits[0].title;
+			data['message'] = result.hits[0].last_message.content;
+			data['idUser'] = result.hits[0].last_message.user;
+			console.log('nouvel id : '+ data['idMessage'] +' taille : ' + data['taille']);
+			compareIdsWithSave(data);
+		}).on('error', function(e){
+        console.log("REQUEST 1 : ", e)
+      }).end();
 	});
 }
 
-function storeId(i) {
-	var obj = {
-		etna: []
-	};
 
-	obj.etna.push({id: i});
-	var json = JSON.stringify(obj);
-	fs.writeFile('save.json', json, 'utf8');
+function postOnSlack(data) {
+	//Récupère les informations de l'utilisateur avant l'envoi
+	request({url: "https://auth.etna-alternance.net/api/users/" + data['idUser'], headers: {Cookie: apiCookie}}, function(error, response, body) {
+		var result = JSON.parse(body);
+		var login = result.login;
+		var name = result.firstname + " " + result.lastname;
+		if (data['taille'] == 1) {
+			var color = '#439FE0';
+			var pretext = 'Une réponse a été apportée au post : ' + data['title'];
+		} else {
+			var color = 'good';
+			var pretext = 'Un nouveau post est arrivé sur le PrepIntra !';
+		}
+		
+		//Paramètre de l'attachment slack a envoyer
+		var attachment = slackClient.createAttachment(data['title']);
+		    attachment.text = data['message'];
+		    attachment.pretext = pretext;
+		    attachment.color = color;
+		    attachment.author_name = '@' + name + ' (' + login + ')';
+		    attachment.author_link = 'https://prepintra.etna-alternance.net/';
+		    attachment.author_icon = 'https://img4.hostingpics.net/pics/921067logoetna.jpg';
+		    attachment.title = data['title'];
+		    attachment.title_link = 'https://prepintra.etna-alternance.net/';
+		    attachment.footer = '';
+		    attachment.ts = Math.floor(Date.now() / 1000);
+		    options.attachments.push(attachment);
+		 
+		//Envoie le message sur le chan
+		slackClient.postMessage(CHANNEL, '', options);
+	}).on('error', function(e){
+        console.log("REQUEST 3 : ", e)
+      }).end();
 }
 
-function getLastIdStored() {
+function insertId(data) {
+	fs.readFile('save.json',function(err,content) {
+	if(err) throw err;
+	var json = JSON.parse(content);
+	var obj = {
+		id: data['idMessage'],
+		messages: data['messages']
+	};
+	json.list.push(obj);
+	var json = JSON.stringify(json);
+	fs.writeFile('save.json', json, 'utf8');
+});
+}
+
+function updateId(data) {
 	fs.readFile('save.json',function(err,content) {
 		if(err) throw err;
+		var boolDejaVu = false;
 		var json = JSON.parse(content);
-		lastID = json.etna[0].id;
+		for (var i = 0; i < json['list'].length; i++) {
+			if (json['list'][i].id === data['idMessage']) {
+				json['list'][i].messages = data['taille'];
+			}
+		}
+	var json = JSON.stringify(json);
+	fs.writeFile('save.json', json, 'utf8');
+	});
+}
+
+function compareIdsWithSave(data) {
+	fs.readFile('save.json',function(err,content) {
+		if(err) throw err;
+		var boolDejaVu = false;
+		var json = JSON.parse(content);
+		for (var i = 0; i < json['list'].length; i++) {
+			if (json['list'][i].id == data['idMessage']) {
+				boolDejaVu = true;
+				if (json['list'][i].messages == data['taille']) {
+					console.log('Message déja vu, pas de nouvelle réponse.');
+				}
+				else if (json['list'][i].messages < data['taille']) {
+					console.log('Nouvelle réponse : publier et stocker');
+					updateId(data);
+					postOnSlack(data);
+				}
+			}
+			else {
+			}
+		}
+		if (boolDejaVu == false) {
+			console.log('Nouveau message : publier et stocker.');
+			insertId(data);
+			postOnSlack(data);
+		}
+		else {
+		}
 	});
 }
