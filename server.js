@@ -49,6 +49,7 @@ function loopRequest() {
 }
 
 function apiReload() {
+	console.log('Scan en cours...');
 	/* Authentification API ETNA */
 	var options = { method: 'POST',
 	url: 'https://auth.etna-alternance.net/login',
@@ -93,7 +94,7 @@ function postOnSlack(data) {
 		var result = JSON.parse(body);
 		var login = result.login;
 		var name = result.firstname + " " + result.lastname;
-		if (data['taille'] == 1) {
+		if (data['taille'] != 1) {
 			var color = '#439FE0';
 			var pretext = 'Une réponse a été apportée au post : ' + data['title'];
 		} else {
