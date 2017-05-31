@@ -18,10 +18,11 @@ Pour recevoir ses actualités (messages du mur) sur Slack.
 Clonez le projet, editez le fichier `server.js` :
 ```js
 /*CONFIGURATION : VOS INFORMATIONS*/
-var LOGIN = ""; //Login ETNA (user_u)
-var PASSWORD = ""; //Password ETNA
-var CHANNEL = ""; //Channel dans lequel le bot va poster les messages
-var SLACKBOT_TOKEN = "xoxb-xxxx"; //https://my.slack.com/services/new/bot
+var `LOGIN` = ""; //Login ETNA (user_u)
+var `PASSWORD` = ""; //Password ETNA
+var `CHANNEL` = ""; //Channel slack dans lequel le bot va poster les messages
+var `USER` = ""; //User slack qui va recevoir les résultats des quests
+var `SLACKBOT_TOKEN = "xoxb-xxxx"; //https://my.slack.com/services/new/bot
 ```
 ### Lancez le serveur
 ```js
@@ -29,6 +30,9 @@ nodejs server.js
 ```
 
 # Patchnote
+### v2.1
+- Prise en charge des quests : seul l'utilisateur `USER` est averti.
+
 #### v2
 - Passage de `slackbots` à `smarslack`
 - Prise en charge des réponses aux messages

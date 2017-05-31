@@ -1,8 +1,10 @@
 /*CONFIGURATION : VOS INFORMATIONS*/
-var LOGIN = "";
-var PASSWORD = "";
-var CHANNEL = "";
-var SLACKBOT_TOKEN = "";
+const
+	LOGIN = "",
+	PASSWORD = "",
+	CHANNEL = "",
+	USER = "",
+	SLACKBOT_TOKEN = "";
 
 /* MODULES */
 const
@@ -19,14 +21,14 @@ const
 	app = express();
 
 /* SLACK */
-var SmartSlack = require('smartslack');
+const SmartSlack = require('smartslack');
 var options = {};
 options.token = SLACKBOT_TOKEN;
 options.as_user = false;
 options.username = 'etna';
 options.icon_url = 'https://img4.hostingpics.net/pics/921067logoetna.jpg';
 options.attachments = [];
-var slackClient = new SmartSlack(options);
+const slackClient = new SmartSlack(options);
 
 /* INIT GLOBALE COOKIE */
 var apiCookie;
@@ -36,20 +38,19 @@ app.timeout = 0;
 app.listen(process.env.PORT || 3000, process.env.IP || "0.0.0.0", function() {
 	slackClient.start();
 	loopRequest();
-	
 	app.on('error', function(err) { console.log("AAAAAAH : ", err) });
-
 }).on('error', function(err) { console.log("BEEEEEEEH : ", err) });
 
 
 function loopRequest() {
+	console.log("Initialisation de la boucle.");
 	var interval = setInterval(function() {
 		apiReload();
 	}, 10000);
 }
 
 function apiReload() {
-	console.log('Scan en cours...');
+	console.log('Reloading...');
 	/* Authentification API ETNA */
 	var options = { method: 'POST',
 	url: 'https://auth.etna-alternance.net/login',
@@ -69,11 +70,15 @@ function apiReload() {
 		
 		/* Get wall promotion */
 		request({url: "https://prepintra-api.etna-alternance.net/users/7934/conversations?from=0&size=1", headers: {Cookie: apiCookie}}, function(error, response, body) {
+			console.log('Requesting wall...');
 			if (error)
 				console.log("INTRA LOADING ERROR : ", error);
 			var result = JSON.parse(body);
-			if (result.hits[0].metas['activity-type'] == "quest") { return; }
 			var data = new Array();
+			if (result.hits[0].metas['activity-type'] == "quest")
+				data['type'] = "quest";
+			else
+				data['type'] = "post";
 			data['taille'] = result.hits[0].messages.length;
 			data['idMessage'] = result.hits[0].id;
 			data['title'] = result.hits[0].title;
@@ -94,17 +99,26 @@ function postOnSlack(data) {
 		var result = JSON.parse(body);
 		var login = result.login;
 		var name = result.firstname + " " + result.lastname;
-		if (data['taille'] != 1) {
-			var color = '#439FE0';
-			var pretext = 'Une réponse a été apportée au post : ' + data['title'];
-		} else {
-			var color = 'good';
-			var pretext = 'Un nouveau post est arrivé sur le PrepIntra !';
+		if (data['type'] == 'quest') {
+			var color = 'warning';
+			var pretext = 'Demande relative au quest : ' + data['title'];
 		}
+		else {
+			if (data['taille'] != 1) {
+				var color = '#439FE0';
+				var pretext = 'Une réponse a été apportée au post : ' + data['title'];
+			} else {
+				var color = 'good';
+				var pretext = 'Un nouveau post est arrivé sur le PrepIntra !';
+			}
+		}
+		
+		//Remplacer les caractères inutiles
+		var text = data['message'].replace(/`/g, '');
 		
 		//Paramètre de l'attachment slack a envoyer
 		var attachment = slackClient.createAttachment(data['title']);
-		    attachment.text = data['message'];
+		    attachment.text = text;
 		    attachment.pretext = pretext;
 		    attachment.color = color;
 		    attachment.author_name = '@' + name + ' (' + login + ')';
@@ -117,7 +131,7 @@ function postOnSlack(data) {
 		    options.attachments.push(attachment);
 		 
 		//Envoie le message sur le chan
-		slackClient.postMessage(CHANNEL, '', options);
+		data['type'] == 'quest' ? slackClient.postDirectMessage(USER, '', options) : slackClient.postMessage(CHANNEL, '', options);
 	}).on('error', function(e){
         console.log("REQUEST 3 : ", e)
       }).end();
@@ -129,7 +143,7 @@ function insertId(data) {
 	var json = JSON.parse(content);
 	var obj = {
 		id: data['idMessage'],
-		messages: data['messages']
+		messages: data['taille']
 	};
 	json.list.push(obj);
 	var json = JSON.stringify(json);
