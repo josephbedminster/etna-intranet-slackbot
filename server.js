@@ -16,7 +16,6 @@ const
 	express = require('express'),
 	request = require('request'),
 	Cookie = require('request-cookies').Cookie,
-	sleep = require('sleep'),
 	fs = require('fs'),
 	app = express();
 
