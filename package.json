@@ -3,12 +3,30 @@
   "version": "0.0.0",
   "description": "A @ETNA Slackbot to keep you notified from articles and event of your PrepIntra's account.",
   "main": "server.js",
-  "repository": "",
-  "author": "Joseph Bedminster <joseph@bedminster.fr",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/josephbedminster/etna-intranet-slackbot.git"
+  },
+  "author": "Joseph Bedminster",
   "dependencies": {
     "async": "~0.2.8",
     "express": "~3.2.4",
-    "request-promise": "^4.2.1",
-    "socket.io": "~0.9.14"
-  }
+    "socket.io": "~0.9.14",
+    "smartslack": "~1.2.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "etna",
+    "intranet",
+    "prepetna",
+    "slackbot"
+  ],
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/josephbedminster/etna-intranet-slackbot/issues"
+  },
+  "homepage": "https://github.com/josephbedminster/etna-intranet-slackbot#readme"
 }
