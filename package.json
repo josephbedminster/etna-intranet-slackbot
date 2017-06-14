@@ -12,7 +12,9 @@
     "async": "~0.2.8",
     "express": "~3.2.4",
     "socket.io": "~0.9.14",
-    "smartslack": "~1.2.0"
+    "smartslack": "~1.2.0",
+    "request": "~2.81.0",
+    "request-cookies": "~1.1.0"
   },
   "scripts": {
     "start": "node server.js"

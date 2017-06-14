@@ -46,7 +46,7 @@ function loopRequest() {
     console.log("Initialisation de la boucle.");
     var interval = setInterval(function() {
         apiReload();
-    }, 1000); //5 * 60000
+    }, 5 * 60000); //5 * 60000
 }
 
 function apiReload() {
